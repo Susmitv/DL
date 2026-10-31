@@ -1,0 +1,34 @@
+
+import numpy as np
+
+# Input sequence
+X = np.array([[1], [2], [3]])
+
+# Initialize weights and biases
+Wxh = np.array([[0.5]])
+Whh = np.array([[0.5]])
+Why = np.array([[1.0]])
+
+bh = np.array([[0.1]])
+by = np.array([[0.1]])
+
+# Initialize hidden state
+h = np.zeros((1, 1))
+
+# RNN forward propagation
+for x in X:
+    x = x.reshape(1, 1)
+
+    # Calculate hidden state
+    h = np.tanh(np.dot(x, Wxh) +
+                np.dot(h, Whh) + bh)
+
+    # Calculate output
+    y = np.dot(h, Why) + by
+
+    print("Input:", x[0][0])
+    print("Hidden State:", h[0][0])
+    print("Output:", y[0][0])
+    print("------------------")
+
+print("Final Hidden State:", h)

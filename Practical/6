@@ -1,0 +1,69 @@
+
+import tensorflow as tf
+from tensorflow import keras
+import matplotlib.pyplot as plt
+
+# Image size and batch size
+IMG_SIZE = (150, 150)
+BATCH_SIZE = 32
+
+# Load training dataset
+train_data = keras.utils.image_dataset_from_directory(
+    '/content/food_dataset/train',
+    image_size=IMG_SIZE,
+    batch_size=BATCH_SIZE
+)
+
+# Load testing dataset
+test_data = keras.utils.image_dataset_from_directory(
+    '/content/food_dataset/test',
+    image_size=IMG_SIZE,
+    batch_size=BATCH_SIZE
+)
+
+# Get class names
+class_names = train_data.class_names
+print("Food Classes:", class_names)
+
+# Build CNN model
+model = keras.Sequential([
+    keras.layers.Rescaling(1./255, input_shape=(150, 150, 3)),
+
+    keras.layers.Conv2D(32, (3, 3), activation='relu'),
+    keras.layers.MaxPooling2D(2, 2),
+
+    keras.layers.Conv2D(64, (3, 3), activation='relu'),
+    keras.layers.MaxPooling2D(2, 2),
+
+    keras.layers.Flatten(),
+    keras.layers.Dense(128, activation='relu'),
+    keras.layers.Dense(len(class_names), activation='softmax')
+])
+
+# Compile model
+model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# Train model
+model.fit(train_data, epochs=5)
+
+# Evaluate model
+loss, accuracy = model.evaluate(test_data)
+print("Test Accuracy:", accuracy * 100, "%")
+
+# Predict a food image
+images, labels = next(iter(test_data))
+prediction = model.predict(images[:1])
+
+predicted_class = prediction.argmax()
+
+print("Predicted Food:", class_names[predicted_class])
+
+# Display image
+plt.imshow(images[0].numpy().astype("uint8"))
+plt.title("Prediction: " + class_names[predicted_class])
+plt.axis('off')
+plt.show()

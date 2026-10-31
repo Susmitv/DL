@@ -1,0 +1,74 @@
+
+import tensorflow as tf
+from tensorflow import keras
+import matplotlib.pyplot as plt
+
+# Set image size and batch size
+IMG_SIZE = (150, 150)
+BATCH_SIZE = 32
+
+# Load training dataset
+train_data = keras.utils.image_dataset_from_directory(
+    '/content/chest_xray/train',
+    image_size=IMG_SIZE,
+    color_mode='grayscale',
+    batch_size=BATCH_SIZE,
+    label_mode='binary',
+    validation_split=0.2,
+    subset='training',
+    seed=123
+)
+
+# Load validation dataset
+val_data = keras.utils.image_dataset_from_directory(
+    '/content/chest_xray/train',
+    image_size=IMG_SIZE,
+    color_mode='grayscale',
+    batch_size=BATCH_SIZE,
+    label_mode='binary',
+    validation_split=0.2,
+    subset='validation',
+    seed=123
+)
+
+# Load testing dataset
+test_data = keras.utils.image_dataset_from_directory(
+    '/content/chest_xray/test',
+    image_size=IMG_SIZE,
+    color_mode='grayscale',
+    batch_size=BATCH_SIZE,
+    label_mode='binary'
+)
+
+# Build CNN model
+model = keras.Sequential([
+    keras.layers.Rescaling(1./255, input_shape=(150, 150, 1)),
+
+    keras.layers.Conv2D(32, (3, 3), activation='relu'),
+    keras.layers.MaxPooling2D(2, 2),
+
+    keras.layers.Conv2D(64, (3, 3), activation='relu'),
+    keras.layers.MaxPooling2D(2, 2),
+
+    keras.layers.Flatten(),
+    keras.layers.Dense(64, activation='relu'),
+    keras.layers.Dropout(0.3),
+    keras.layers.Dense(1, activation='sigmoid')
+])
+
+# Compile model
+model.compile(
+    optimizer='adam',
+    loss='binary_crossentropy',
+    metrics=['accuracy']
+)
+
+# Train model
+model.fit(train_data, epochs=5, validation_data=val_data)
+
+# Evaluate model
+loss, accuracy = model.evaluate(test_data)
+print("Test Accuracy:", accuracy * 100, "%")
+
+# Display model summary
+model.summary()

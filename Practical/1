@@ -1,0 +1,47 @@
+
+import tensorflow as tf
+
+# Create tensors
+a = tf.constant([1, 2, 3])
+b = tf.constant([4, 5, 6])
+
+# Display tensors
+print("Tensor A:", a)
+print("Tensor B:", b)
+
+# Addition
+print("Addition:", tf.add(a, b))
+
+# Multiplication
+print("Multiplication:", tf.multiply(a, b))
+
+# Matrix multiplication
+x = tf.constant([[1, 2], [3, 4]])
+y = tf.constant([[5, 6], [7, 8]])
+
+print("Matrix Multiplication:")
+print(tf.matmul(x, y))
+
+
+import torch
+
+# Create tensors
+a = torch.tensor([1, 2, 3])
+b = torch.tensor([4, 5, 6])
+
+# Display tensors
+print("Tensor A:", a)
+print("Tensor B:", b)
+
+# Addition
+print("Addition:", torch.add(a, b))
+
+# Multiplication
+print("Multiplication:", torch.mul(a, b))
+
+# Matrix multiplication
+x = torch.tensor([[1, 2], [3, 4]])
+y = torch.tensor([[5, 6], [7, 8]])
+
+print("Matrix Multiplication:")
+print(torch.matmul(x, y))

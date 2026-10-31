@@ -1,0 +1,54 @@
+
+import tensorflow as tf
+from tensorflow import keras
+import matplotlib.pyplot as plt
+
+# Load Fashion-MNIST dataset
+(x_train, y_train), (x_test, y_test) = keras.datasets.fashion_mnist.load_data()
+
+# Normalize data
+x_train = x_train / 255.0
+x_test = x_test / 255.0
+
+# Reshape images for CNN (28, 28, 1)
+x_train = x_train.reshape(-1, 28, 28, 1)
+x_test = x_test.reshape(-1, 28, 28, 1)
+
+# Class names
+class_names = ['T-shirt', 'Trouser', 'Pullover', 'Dress',
+               'Coat', 'Sandal', 'Shirt', 'Sneaker',
+               'Bag', 'Ankle Boot']
+
+# Build CNN model
+model = keras.Sequential([
+    keras.layers.Conv2D(32, (3, 3), activation='relu',
+                        input_shape=(28, 28, 1)),
+    keras.layers.MaxPooling2D((2, 2)),
+    keras.layers.Flatten(),
+    keras.layers.Dense(64, activation='relu'),
+    keras.layers.Dense(10, activation='softmax')
+])
+
+# Compile model
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+# Train model
+model.fit(x_train, y_train, epochs=5)
+
+# Evaluate model
+loss, accuracy = model.evaluate(x_test, y_test)
+print("Test Accuracy:", accuracy * 100, "%")
+
+# Predict an image
+prediction = model.predict(x_test[:1])
+predicted_class = prediction.argmax()
+
+print("Predicted Class:", class_names[predicted_class])
+
+# Display image
+plt.imshow(x_test[0].reshape(28, 28), cmap='gray')
+plt.title("Prediction: " + class_names[predicted_class])
+plt.axis('off')
+plt.show()

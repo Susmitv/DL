@@ -1,0 +1,159 @@
+
+# Practical: Image Classification using Transfer Learning
+# Dataset: Animal Dataset (Cat, Dog, Horse)
+# Pre-trained Model: MobileNetV2
+
+# Step 1: Import libraries
+
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+
+from tensorflow.keras import layers, models
+from tensorflow.keras.applications import MobileNetV2
+
+
+# Step 2: Define dataset paths
+
+train_dir = "/content/animal_dataset/train"
+test_dir = "/content/animal_dataset/test"
+
+
+# Step 3: Load training dataset
+
+train_data = tf.keras.utils.image_dataset_from_directory(
+    train_dir,
+    image_size=(224, 224),
+    batch_size=32,
+    label_mode='int'
+)
+
+
+# Step 4: Load testing dataset
+
+test_data = tf.keras.utils.image_dataset_from_directory(
+    test_dir,
+    image_size=(224, 224),
+    batch_size=32,
+    label_mode='int',
+    shuffle=False
+)
+
+
+# Step 5: Get class names
+
+class_names = train_data.class_names
+
+print("Animal Classes:", class_names)
+
+
+# Step 6: Load pre-trained MobileNetV2 model
+
+base_model = MobileNetV2(
+    weights='imagenet',
+    include_top=False,
+    input_shape=(224, 224, 3)
+)
+
+
+# Step 7: Freeze pre-trained layers
+
+base_model.trainable = False
+
+
+# Step 8: Build transfer learning model
+
+model = models.Sequential([
+
+    layers.Input(shape=(224, 224, 3)),
+
+    # Preprocessing
+    layers.Rescaling(1./127.5, offset=-1),
+
+    # Pre-trained MobileNetV2
+    base_model,
+
+    # Classification layers
+    layers.GlobalAveragePooling2D(),
+
+    layers.Dense(128, activation='relu'),
+
+    layers.Dropout(0.3),
+
+    layers.Dense(len(class_names), activation='softmax')
+])
+
+
+# Step 9: Compile the model
+
+model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+
+# Step 10: Display model summary
+
+model.summary()
+
+
+# Step 11: Train the model
+
+history = model.fit(
+    train_data,
+    validation_data=test_data,
+    epochs=5
+)
+
+
+# Step 12: Evaluate the model
+
+loss, accuracy = model.evaluate(test_data)
+
+print("\nTest Loss:", loss)
+print("Test Accuracy:", accuracy * 100, "%")
+
+
+# Step 13: Plot training accuracy
+
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+
+plt.title('Model Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.show()
+
+
+# Step 14: Predict a new animal image
+
+image_path = "/content/animal_dataset/test/dog/sample.jpg"
+
+img = tf.keras.utils.load_img(
+    image_path,
+    target_size=(224, 224)
+)
+
+img_array = tf.keras.utils.img_to_array(img)
+
+img_array = np.expand_dims(img_array, axis=0)
+
+prediction = model.predict(img_array)
+
+predicted_class = class_names[np.argmax(prediction)]
+
+confidence = np.max(prediction) * 100
+
+print("\nPredicted Animal:", predicted_class)
+
+print("Confidence:", confidence, "%")
+
+
+# Step 15: Display input image and prediction
+
+plt.imshow(img)
+plt.title("Predicted Animal: " + predicted_class)
+plt.axis('off')
+plt.show()
