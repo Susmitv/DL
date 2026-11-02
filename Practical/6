@@ -2,68 +2,93 @@
 import tensorflow as tf
 from tensorflow import keras
 import matplotlib.pyplot as plt
+import numpy as np
 
-# Image size and batch size
-IMG_SIZE = (150, 150)
-BATCH_SIZE = 32
+# Step 1: Load dataset
 
-# Load training dataset
 train_data = keras.utils.image_dataset_from_directory(
-    '/content/food_dataset/train',
-    image_size=IMG_SIZE,
-    batch_size=BATCH_SIZE
+    "food_dataset/train",
+    image_size=(150, 150),
+    batch_size=32
 )
 
-# Load testing dataset
 test_data = keras.utils.image_dataset_from_directory(
-    '/content/food_dataset/test',
-    image_size=IMG_SIZE,
-    batch_size=BATCH_SIZE
+    "food_dataset/test",
+    image_size=(150, 150),
+    batch_size=32
 )
 
 # Get class names
 class_names = train_data.class_names
+
 print("Food Classes:", class_names)
 
-# Build CNN model
+# Step 2: Create CNN model
+
 model = keras.Sequential([
-    keras.layers.Rescaling(1./255, input_shape=(150, 150, 3)),
 
-    keras.layers.Conv2D(32, (3, 3), activation='relu'),
-    keras.layers.MaxPooling2D(2, 2),
+    keras.layers.Input(shape=(150, 150, 3)),
 
-    keras.layers.Conv2D(64, (3, 3), activation='relu'),
-    keras.layers.MaxPooling2D(2, 2),
+    keras.layers.Rescaling(1./255),
+
+    keras.layers.Conv2D(32, (3,3), activation='relu'),
+    keras.layers.MaxPooling2D((2,2)),
+
+    keras.layers.Conv2D(64, (3,3), activation='relu'),
+    keras.layers.MaxPooling2D((2,2)),
 
     keras.layers.Flatten(),
+
     keras.layers.Dense(128, activation='relu'),
+
+    keras.layers.Dropout(0.3),
+
     keras.layers.Dense(len(class_names), activation='softmax')
 ])
 
-# Compile model
+# Step 3: Compile model
+
 model.compile(
     optimizer='adam',
     loss='sparse_categorical_crossentropy',
     metrics=['accuracy']
 )
 
-# Train model
-model.fit(train_data, epochs=5)
+# Step 4: Train model
 
-# Evaluate model
+model.fit(
+    train_data,
+    epochs=5,
+    validation_data=test_data
+)
+
+# Step 5: Evaluate model
+
 loss, accuracy = model.evaluate(test_data)
+
 print("Test Accuracy:", accuracy * 100, "%")
 
-# Predict a food image
-images, labels = next(iter(test_data))
-prediction = model.predict(images[:1])
+# Step 6: Predict food image
 
-predicted_class = prediction.argmax()
+image_path = "food_dataset/test/pizza/sample.jpg"
 
-print("Predicted Food:", class_names[predicted_class])
+img = keras.utils.load_img(
+    image_path,
+    target_size=(150,150)
+)
 
-# Display image
-plt.imshow(images[0].numpy().astype("uint8"))
-plt.title("Prediction: " + class_names[predicted_class])
+img_array = keras.utils.img_to_array(img)
+img_array = np.expand_dims(img_array, axis=0)
+
+prediction = model.predict(img_array)
+
+predicted_class = class_names[np.argmax(prediction)]
+
+print("Predicted Food:", predicted_class)
+
+# Step 7: Display image
+
+plt.imshow(img)
+plt.title("Predicted Food: " + predicted_class)
 plt.axis('off')
 plt.show()
