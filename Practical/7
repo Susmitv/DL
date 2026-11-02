@@ -1,0 +1,75 @@
+
+import tensorflow as tf
+from tensorflow import keras
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Load dataset
+train_data = keras.utils.image_dataset_from_directory(
+    "brain_tumor/train",
+    image_size=(150, 150),
+    batch_size=32
+)
+
+test_data = keras.utils.image_dataset_from_directory(
+    "brain_tumor/test",
+    image_size=(150, 150),
+    batch_size=32
+)
+
+# Get class names
+class_names = train_data.class_names
+print("Classes:", class_names)
+
+# Build CNN model
+model = keras.Sequential([
+    keras.layers.Input(shape=(150, 150, 3)),
+    keras.layers.Rescaling(1./255),
+
+    keras.layers.Conv2D(32, (3,3), activation='relu'),
+    keras.layers.MaxPooling2D((2,2)),
+
+    keras.layers.Conv2D(64, (3,3), activation='relu'),
+    keras.layers.MaxPooling2D((2,2)),
+
+    keras.layers.Flatten(),
+    keras.layers.Dense(128, activation='relu'),
+    keras.layers.Dropout(0.3),
+    keras.layers.Dense(len(class_names), activation='softmax')
+])
+
+# Compile model
+model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# Train model
+model.fit(train_data, epochs=5, validation_data=test_data)
+
+# Evaluate model
+loss, accuracy = model.evaluate(test_data)
+print("Test Accuracy:", accuracy * 100, "%")
+
+# Predict a brain MRI image
+image_path = "brain_tumor/test/glioma/sample.jpg"
+
+img = keras.utils.load_img(
+    image_path,
+    target_size=(150, 150)
+)
+
+img_array = keras.utils.img_to_array(img)
+img_array = np.expand_dims(img_array, axis=0)
+
+prediction = model.predict(img_array)
+
+predicted_class = class_names[np.argmax(prediction)]
+print("Predicted Class:", predicted_class)
+
+# Display image
+plt.imshow(img)
+plt.title("Prediction: " + predicted_class)
+plt.axis('off')
+plt.show()
