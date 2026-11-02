@@ -1,20 +1,25 @@
 
 import tensorflow as tf
 from tensorflow import keras
+import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 
 # Load MNIST dataset
-(x_train, _), (x_test, _) = keras.datasets.mnist.load_data()
+data = pd.read_csv("MNIST/train.csv")
 
-# Normalize images
-x_train = x_train / 255.0
-x_test = x_test / 255.0
+X = data.drop("label", axis=1).values
 
-# Flatten images
-x_train = x_train.reshape(-1, 784)
-x_test = x_test.reshape(-1, 784)
+# Normalize pixel values
+X = X / 255.0
 
-# Build Autoencoder
+# Split dataset
+from sklearn.model_selection import train_test_split
+x_train, x_test = train_test_split(
+    X, test_size=0.2, random_state=42
+)
+
+# Build Sparse Autoencoder
 model = keras.Sequential([
     keras.layers.Input(shape=(784,)),
 
@@ -35,7 +40,7 @@ model.compile(
     loss='binary_crossentropy'
 )
 
-# Train Autoencoder
+# Train autoencoder
 model.fit(
     x_train, x_train,
     epochs=10,
@@ -44,20 +49,22 @@ model.fit(
 )
 
 # Reconstruct images
-decoded_images = model.predict(x_test)
+decoded = model.predict(x_test)
 
 # Display original and reconstructed images
 plt.figure(figsize=(10, 4))
 
 for i in range(5):
     # Original image
-    plt.subplot(2, 5, i + 1)
+    plt.subplot(2, 5, i+1)
     plt.imshow(x_test[i].reshape(28, 28), cmap='gray')
     plt.axis('off')
+    plt.title("Original")
 
     # Reconstructed image
-    plt.subplot(2, 5, i + 6)
-    plt.imshow(decoded_images[i].reshape(28, 28), cmap='gray')
+    plt.subplot(2, 5, i+6)
+    plt.imshow(decoded[i].reshape(28, 28), cmap='gray')
     plt.axis('off')
+    plt.title("Reconstructed")
 
 plt.show()
