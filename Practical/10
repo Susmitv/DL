@@ -8,30 +8,29 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, confusion_matrix
 
 # Load dataset
-data = pd.read_csv('/content/creditcard.csv')
+data = pd.read_csv("Credit_Card/creditcard.csv")
 
-# Separate features and labels
-X = data.drop('Class', axis=1)
-y = data['Class']
+X = data.drop("Class", axis=1).values
+y = data["Class"].values
 
-# Split training and testing data
-X_train, X_test, y_train, y_test = train_test_split(
+# Split dataset
+x_train, x_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
 
-# Select only normal transactions for training
-X_normal = X_train[y_train == 0]
+# Keep only normal transactions for training
+x_train_normal = x_train[y_train == 0]
 
-# Split normal data for training and validation
-X_train_normal, X_val = train_test_split(
-    X_normal, test_size=0.2, random_state=42
+# Split normal data for validation
+x_train_normal, x_val = train_test_split(
+    x_train_normal, test_size=0.2, random_state=42
 )
 
 # Normalize data
 scaler = StandardScaler()
-X_train_normal = scaler.fit_transform(X_train_normal)
-X_val = scaler.transform(X_val)
-X_test = scaler.transform(X_test)
+x_train_normal = scaler.fit_transform(x_train_normal)
+x_val = scaler.transform(x_val)
+x_test = scaler.transform(x_test)
 
 # Build Autoencoder
 model = keras.Sequential([
@@ -47,30 +46,30 @@ model.compile(optimizer='adam', loss='mse')
 
 # Train only on normal transactions
 model.fit(
-    X_train_normal, X_train_normal,
+    x_train_normal, x_train_normal,
     epochs=10,
     batch_size=256,
-    validation_data=(X_val, X_val)
+    validation_data=(x_val, x_val)
 )
 
-# Calculate validation reconstruction error
-val_reconstructed = model.predict(X_val)
-val_error = np.mean((X_val - val_reconstructed) ** 2, axis=1)
+# Calculate reconstruction error on normal validation data
+val_prediction = model.predict(x_val)
+val_error = np.mean(np.square(x_val - val_prediction), axis=1)
 
 # Set anomaly threshold
 threshold = np.percentile(val_error, 95)
-print("Anomaly Threshold:", threshold)
+print("Threshold:", threshold)
 
 # Predict test transactions
-reconstructed = model.predict(X_test)
-test_error = np.mean((X_test - reconstructed) ** 2, axis=1)
+test_prediction = model.predict(x_test)
+test_error = np.mean(np.square(x_test - test_prediction), axis=1)
 
-# Detect anomalies
-predictions = (test_error > threshold).astype(int)
+# Classify normal and fraud transactions
+y_pred = (test_error > threshold).astype(int)
 
-# Display results
+# Evaluate model
 print("Confusion Matrix:")
-print(confusion_matrix(y_test, predictions))
+print(confusion_matrix(y_test, y_pred))
 
 print("Classification Report:")
-print(classification_report(y_test, predictions, zero_division=0))
+print(classification_report(y_test, y_pred))
