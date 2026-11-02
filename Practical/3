@@ -1,48 +1,69 @@
-
 import tensorflow as tf
 from tensorflow import keras
 import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
 
-# Load CIFAR-10 dataset
-(x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
+from sklearn.model_selection import train_test_split
 
-# Normalize images
-x_train = x_train / 255.0
-x_test = x_test / 255.0
+# Step 1: Load dataset
+data = pd.read_csv("CIFAR/cifar.csv")
 
-# Class names
-class_names = ['Airplane', 'Automobile', 'Bird', 'Cat', 'Deer',
-               'Dog', 'Frog', 'Horse', 'Ship', 'Truck']
+# Step 2: Separate images and labels
+X = data.drop("label", axis=1).values
+y = data["label"].values
 
-# Create Feedforward Neural Network
+# Step 3: Reshape images into 32x32 RGB
+X = X.reshape(-1, 32, 32, 3)
+
+# Step 4: Normalize data
+X = X / 255.0
+
+# Step 5: Split dataset into training and testing
+x_train, x_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    random_state=42
+)
+
+# Step 6: Create Feedforward Neural Network
 model = keras.Sequential([
     keras.layers.Flatten(input_shape=(32, 32, 3)),
     keras.layers.Dense(128, activation='relu'),
     keras.layers.Dense(10, activation='softmax')
 ])
 
-# Compile model
+# Step 7: Compile model
 model.compile(
     optimizer='adam',
     loss='sparse_categorical_crossentropy',
     metrics=['accuracy']
 )
 
-# Train model
+# Step 8: Train model
 model.fit(x_train, y_train, epochs=5)
 
-# Evaluate model
+# Step 9: Evaluate model
 loss, accuracy = model.evaluate(x_test, y_test)
+
 print("Test Accuracy:", accuracy * 100, "%")
 
-# Predict image
+# Step 10: Predict image
 prediction = model.predict(x_test[:1])
-digit = prediction.argmax()
 
-print("Predicted Class:", class_names[digit])
+predicted_class = prediction.argmax()
 
-# Display image
+# CIFAR-10 class names
+class_names = [
+    'airplane', 'automobile', 'bird',
+    'cat', 'deer', 'dog', 'frog',
+    'horse', 'ship', 'truck'
+]
+
+print("Predicted Class:", class_names[predicted_class])
+
+# Step 11: Display image
 plt.imshow(x_test[0])
-plt.title("Prediction: " + class_names[digit])
+plt.title("Predicted: " + class_names[predicted_class])
 plt.axis('off')
 plt.show()
