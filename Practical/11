@@ -1,15 +1,22 @@
 
-import numpy as np
 import tensorflow as tf
 from tensorflow import keras
+import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
 
-# Load MNIST dataset
-(x_train, _), (x_test, _) = keras.datasets.mnist.load_data()
+# Load dataset
+data = pd.read_csv("MNIST/train.csv")
+X = data.drop("label", axis=1).values
 
 # Normalize images
-x_train = x_train / 255.0
-x_test = x_test / 255.0
+X = X / 255.0
+
+# Split dataset
+x_train, x_test = train_test_split(
+    X, test_size=0.2, random_state=42
+)
 
 # Add noise to images
 noise_factor = 0.4
@@ -22,44 +29,54 @@ x_test_noisy = x_test + noise_factor * np.random.normal(
     loc=0.0, scale=1.0, size=x_test.shape
 )
 
-# Clip values between 0 and 1
+# Keep pixel values between 0 and 1
 x_train_noisy = np.clip(x_train_noisy, 0., 1.)
 x_test_noisy = np.clip(x_test_noisy, 0., 1.)
 
 # Build Autoencoder
 model = keras.Sequential([
-    keras.layers.Flatten(input_shape=(28, 28)),
+    keras.layers.Input(shape=(784,)),
     keras.layers.Dense(128, activation='relu'),
-    keras.layers.Dense(784, activation='sigmoid'),
-    keras.layers.Reshape((28, 28))
+    keras.layers.Dense(784, activation='sigmoid')
 ])
 
 # Compile model
-model.compile(optimizer='adam', loss='binary_crossentropy')
+model.compile(
+    optimizer='adam',
+    loss='binary_crossentropy'
+)
 
-# Train model
+# Train model: noisy input, clean output
 model.fit(
     x_train_noisy, x_train,
-    epochs=5,
+    epochs=10,
     batch_size=256,
     validation_data=(x_test_noisy, x_test)
 )
 
 # Reconstruct images
-decoded_images = model.predict(x_test_noisy)
+decoded = model.predict(x_test_noisy)
 
-# Display noisy and denoised images
+# Display results
 plt.figure(figsize=(10, 6))
 
 for i in range(5):
     # Noisy image
-    plt.subplot(2, 5, i + 1)
-    plt.imshow(x_test_noisy[i], cmap='gray')
+    plt.subplot(3, 5, i+1)
+    plt.imshow(x_test_noisy[i].reshape(28, 28), cmap='gray')
+    plt.title("Noisy")
+    plt.axis('off')
+
+    # Original image
+    plt.subplot(3, 5, i+6)
+    plt.imshow(x_test[i].reshape(28, 28), cmap='gray')
+    plt.title("Original")
     plt.axis('off')
 
     # Denoised image
-    plt.subplot(2, 5, i + 6)
-    plt.imshow(decoded_images[i], cmap='gray')
+    plt.subplot(3, 5, i+11)
+    plt.imshow(decoded[i].reshape(28, 28), cmap='gray')
+    plt.title("Denoised")
     plt.axis('off')
 
 plt.show()
