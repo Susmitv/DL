@@ -1,15 +1,17 @@
-
-import pandas as pd
-import numpy as np
 import tensorflow as tf
 from tensorflow import keras
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, confusion_matrix
 
-# Load dataset
-data = pd.read_csv("Credit_Card/creditcard.csv")
+# Load credit card dataset
+data = pd.read_csv("creditcard.csv")
 
+# Separate features and labels
 X = data.drop("Class", axis=1).values
 y = data["Class"].values
 
@@ -19,57 +21,71 @@ x_train, x_test, y_train, y_test = train_test_split(
 )
 
 # Keep only normal transactions for training
-x_train_normal = x_train[y_train == 0]
-
-# Split normal data for validation
-x_train_normal, x_val = train_test_split(
-    x_train_normal, test_size=0.2, random_state=42
-)
+x_train = x_train[y_train == 0]
 
 # Normalize data
 scaler = StandardScaler()
-x_train_normal = scaler.fit_transform(x_train_normal)
-x_val = scaler.transform(x_val)
+x_train = scaler.fit_transform(x_train)
 x_test = scaler.transform(x_test)
 
 # Build Autoencoder
 model = keras.Sequential([
-    keras.layers.Input(shape=(30,)),
+    keras.layers.Input(shape=(x_train.shape[1],)),
+
+    # Encoder
     keras.layers.Dense(14, activation='relu'),
     keras.layers.Dense(7, activation='relu'),
+
+    # Decoder
     keras.layers.Dense(14, activation='relu'),
-    keras.layers.Dense(30, activation='linear')
+    keras.layers.Dense(x_train.shape[1], activation='linear')
 ])
 
 # Compile model
-model.compile(optimizer='adam', loss='mse')
-
-# Train only on normal transactions
-model.fit(
-    x_train_normal, x_train_normal,
-    epochs=10,
-    batch_size=256,
-    validation_data=(x_val, x_val)
+model.compile(
+    optimizer='adam',
+    loss='mse'
 )
 
-# Calculate reconstruction error on normal validation data
-val_prediction = model.predict(x_val)
-val_error = np.mean(np.square(x_val - val_prediction), axis=1)
+# Train autoencoder using normal transactions
+model.fit(
+    x_train, x_train,
+    epochs=10,
+    batch_size=256,
+    validation_split=0.2
+)
+
+# Calculate reconstruction error on training data
+train_predictions = model.predict(x_train)
+train_error = np.mean(np.square(x_train - train_predictions), axis=1)
 
 # Set anomaly threshold
-threshold = np.percentile(val_error, 95)
-print("Threshold:", threshold)
+threshold = np.percentile(train_error, 95)
+print("Anomaly Threshold:", threshold)
 
-# Predict test transactions
-test_prediction = model.predict(x_test)
-test_error = np.mean(np.square(x_test - test_prediction), axis=1)
+# Reconstruct test transactions
+decoded = model.predict(x_test)
 
-# Classify normal and fraud transactions
+# Calculate reconstruction error
+test_error = np.mean(np.square(x_test - decoded), axis=1)
+
+# Detect anomalies
 y_pred = (test_error > threshold).astype(int)
 
 # Evaluate model
 print("Confusion Matrix:")
 print(confusion_matrix(y_test, y_pred))
 
-print("Classification Report:")
+print("\nClassification Report:")
 print(classification_report(y_test, y_pred))
+
+# Display reconstruction errors
+plt.figure(figsize=(8, 4))
+plt.hist(test_error, bins=50)
+plt.axvline(threshold, color='red', linestyle='dashed',
+            label='Anomaly Threshold')
+plt.xlabel("Reconstruction Error")
+plt.ylabel("Number of Transactions")
+plt.title("Credit Card Anomaly Detection")
+plt.legend()
+plt.show()
