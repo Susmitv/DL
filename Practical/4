@@ -2,53 +2,94 @@
 import tensorflow as tf
 from tensorflow import keras
 import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
 
-# Load Fashion-MNIST dataset
-(x_train, y_train), (x_test, y_test) = keras.datasets.fashion_mnist.load_data()
+from sklearn.model_selection import train_test_split
 
-# Normalize data
-x_train = x_train / 255.0
-x_test = x_test / 255.0
+# Step 1: Load dataset
+data = pd.read_csv("Fashion_MNIST/fashion-mnist_train.csv")
 
-# Reshape images for CNN (28, 28, 1)
-x_train = x_train.reshape(-1, 28, 28, 1)
-x_test = x_test.reshape(-1, 28, 28, 1)
+# Step 2: Separate images and labels
+X = data.drop("label", axis=1).values
+y = data["label"].values
 
-# Class names
-class_names = ['T-shirt', 'Trouser', 'Pullover', 'Dress',
-               'Coat', 'Sandal', 'Shirt', 'Sneaker',
-               'Bag', 'Ankle Boot']
+# Step 3: Reshape images into 28x28
+X = X.reshape(-1, 28, 28, 1)
 
-# Build CNN model
+# Step 4: Normalize data
+X = X / 255.0
+
+# Step 5: Split dataset into training and testing
+x_train, x_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    random_state=42
+)
+
+# Step 6: Create CNN model
 model = keras.Sequential([
-    keras.layers.Conv2D(32, (3, 3), activation='relu',
-                        input_shape=(28, 28, 1)),
-    keras.layers.MaxPooling2D((2, 2)),
+
+    keras.layers.Conv2D(
+        32, (3,3),
+        activation='relu',
+        input_shape=(28,28,1)
+    ),
+
+    keras.layers.MaxPooling2D((2,2)),
+
+    keras.layers.Conv2D(
+        64, (3,3),
+        activation='relu'
+    ),
+
+    keras.layers.MaxPooling2D((2,2)),
+
     keras.layers.Flatten(),
+
     keras.layers.Dense(64, activation='relu'),
+
     keras.layers.Dense(10, activation='softmax')
 ])
 
-# Compile model
-model.compile(optimizer='adam',
-              loss='sparse_categorical_crossentropy',
-              metrics=['accuracy'])
+# Step 7: Compile model
+model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
 
-# Train model
-model.fit(x_train, y_train, epochs=5)
+# Step 8: Display model summary
+model.summary()
 
-# Evaluate model
+# Step 9: Train model
+model.fit(
+    x_train, y_train,
+    epochs=5
+)
+
+# Step 10: Evaluate model
 loss, accuracy = model.evaluate(x_test, y_test)
+
 print("Test Accuracy:", accuracy * 100, "%")
 
-# Predict an image
+# Step 11: Predict image
 prediction = model.predict(x_test[:1])
+
 predicted_class = prediction.argmax()
+
+# Fashion-MNIST class names
+class_names = [
+    'T-shirt/top', 'Trouser', 'Pullover',
+    'Dress', 'Coat', 'Sandal',
+    'Shirt', 'Sneaker', 'Bag',
+    'Ankle boot'
+]
 
 print("Predicted Class:", class_names[predicted_class])
 
-# Display image
-plt.imshow(x_test[0].reshape(28, 28), cmap='gray')
-plt.title("Prediction: " + class_names[predicted_class])
+# Step 12: Display image
+plt.imshow(x_test[0].reshape(28,28), cmap='gray')
+plt.title("Predicted: " + class_names[predicted_class])
 plt.axis('off')
 plt.show()
